@@ -6,18 +6,18 @@ use CsvLookup\Exception\InvalidArgumentException;
 use CsvLookup\Exception\LogicException;
 use function array_filter;
 use function count;
-use function filter_var;
 use function gettype;
 use function in_array;
+use function intval;
 use function is_array;
+use function is_float;
 use function is_string;
 use function join;
+use function preg_match;
 use function sprintf;
 use function strpos;
 use function strtolower;
 use function strtotime;
-use const FILTER_VALIDATE_FLOAT;
-use const FILTER_VALIDATE_INT;
 
 final class CsvQuery
 {
@@ -196,12 +196,24 @@ final class CsvQuery
             return "bool";
         }
 
-        if (filter_var($this->value, FILTER_VALIDATE_FLOAT) !== false) {
-            return "float";
+        if (
+            is_int($this->value) ||
+            (
+                is_string($this->value) &&
+                intval(preg_match('/^[0-9]+$/', $this->value)) > 0
+            )
+        ) {
+            return "int";
         }
 
-        if (filter_var($this->value, FILTER_VALIDATE_INT) !== false) {
-            return "int";
+        if (
+            is_float($this->value) ||
+            (
+                is_string($this->value) &&
+                intval(preg_match('/^([+\-])?([0-9]*[.])?[0-9]+$/', $this->value)) > 0
+            )
+        ) {
+            return "float";
         }
 
         if (is_string($this->value) && strtotime($this->value) !== false) {
