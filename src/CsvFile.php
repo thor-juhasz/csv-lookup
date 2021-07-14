@@ -553,7 +553,7 @@ class CsvFile
         $results = [];
         while (($line = $this->getLine()) !== null) {
             if ($this->findInLine($conditions, $line)) {
-                $results[$this->fileHandle->key()] = $this->fileHandle->current();
+                $results[$this->fileHandle->key()] = join(",", $line);
             }
         }
 
