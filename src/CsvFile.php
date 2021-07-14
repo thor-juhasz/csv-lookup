@@ -356,7 +356,7 @@ class CsvFile
      *
      * @return string[]
      */
-    private function getHeaders(): array
+    public function getHeaders(): array
     {
         if ($this->fileHandle === null) {
             throw new RuntimeException('Can not get CSV headers, no file given.');
