@@ -18,6 +18,7 @@ use function sprintf;
 use function strpos;
 use function strtolower;
 use function strtotime;
+use function trim;
 
 final class CsvQuery
 {
@@ -136,12 +137,35 @@ final class CsvQuery
         );
     }
 
+    private function getValueAsBool(): string
+    {
+        if (in_array($this->getValue(), [true, "true"], true)) {
+            return "true";
+        }
+
+        return "false";
+    }
+
+    /**
+     * @throws LogicException
+     */
+    private function getValueAsString(): string
+    {
+        if (is_array($this->value)) {
+            throw new LogicException(
+                'Can not fetch CsvQuery::$value as string, value is of type array'
+            );
+        }
+
+        return (string) $this->value;
+    }
+
     /**
      * @psalm-return array{lower: mixed, upper: mixed}
      *
      * @throws InvalidArgumentException
      */
-    private function getTupleValue(): array
+    private function getValueAsTuple(): array
     {
         if (is_array($this->value) === false || count($this->value) !== 2) {
             throw new InvalidArgumentException(
@@ -234,222 +258,176 @@ final class CsvQuery
         throw new LogicException('Can not get type of value.');
     }
 
-    /**
-     * @param mixed $columnValue
-     */
-    private function findByMatches($columnValue): bool
+    private function findByMatches(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_MATCHES &&
-               $columnValue === $this->getValue();
+               $columnValue === $value;
     }
 
-    /**
-     * @param mixed $columnValue
-     */
-    private function findByMatchesLoose($columnValue): bool
+    private function findByMatchesLoose(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_MATCHES_LOOSE &&
-               $columnValue == $this->getValue();
+               trim($columnValue) == trim($value);
     }
 
-    /**
-     * @param mixed $columnValue
-     */
-    private function findByNotMatches($columnValue): bool
+    private function findByNotMatches(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_NOT_MATCHES &&
-               $columnValue !== $this->getValue();
+               $columnValue !== $value;
     }
 
-    /**
-     * @param mixed $columnValue
-     */
-    private function findByNotMatchesLoose($columnValue): bool
+    private function findByNotMatchesLoose(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_NOT_MATCHES_LOOSE &&
-               $columnValue != $this->getValue();
+               trim($columnValue) != trim($value);
     }
 
-    private function findByContains(string $columnValue): bool
+    private function findByContains(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_CONTAINS &&
-               strpos($columnValue, $this->getValue()) !== false;
+               strpos($columnValue, $value) !== false;
     }
 
-    private function findByContainsLoose(string $columnValue): bool
+    private function findByContainsLoose(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_CONTAINS_LOOSE &&
-               strpos(strtolower($columnValue), strtolower((string) $this->getValue())) !== false;
+               strpos(strtolower($columnValue), strtolower($value)) !== false;
     }
 
-    private function findByNotContains(string $columnValue): bool
+    private function findByNotContains(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_NOT_CONTAINS &&
-               strpos($columnValue, $this->getValue()) === false;
+               strpos($columnValue, $value) === false;
     }
 
-    private function findByNotContainsLoose(string $columnValue): bool
+    private function findByNotContainsLoose(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_NOT_CONTAINS_LOOSE &&
-               strpos(strtolower($columnValue), strtolower((string) $this->getValue())) === false;
+               strpos(strtolower($columnValue), strtolower($value)) === false;
     }
 
-    /**
-     * @param mixed $columnValue
-     */
-    private function findByGreaterThan($columnValue): bool
+    private function findByGreaterThan(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_GREATER_THAN &&
-               $columnValue > $this->getValue();
+               $columnValue > $value;
     }
 
-    /**
-     * @param mixed $columnValue
-     */
-    private function findByGreaterOrEqualThan($columnValue): bool
+    private function findByGreaterOrEqualThan(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_GREATER_OR_EQUAL_THAN &&
-               $columnValue >= $this->getValue();
+               $columnValue >= $value;
     }
 
-    /**
-     * @param mixed $columnValue
-     */
-    private function findByLowerThan($columnValue): bool
+    private function findByLowerThan(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_LOWER_THAN &&
-               $columnValue < $this->getValue();
+               $columnValue < $value;
     }
 
-    /**
-     * @param mixed $columnValue
-     */
-    private function findByLowerOrEqualThan($columnValue): bool
+    private function findByLowerOrEqualThan(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_LOWER_OR_EQUAL_THAN &&
-               $columnValue <= $this->getValue();
+               $columnValue <= $value;
     }
 
     /**
-     * @param mixed $columnValue
+     * @param string $columnValue
+     * @param array  $value
      *
-     * @throws InvalidArgumentException
+     * @psalm-param array{lower: mixed, upper: mixed} $value
+     *
+     * @return bool
      */
-    private function findByBetween($columnValue): bool
+    private function findByBetween(string $columnValue, array $value): bool
     {
-        $value = $this->getTupleValue();
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_BETWEEN &&
                $columnValue > $value['lower'] && $columnValue < $value['upper'];
     }
 
     /**
-     * @param mixed $columnValue
+     * @param string $columnValue
+     * @param array  $value
      *
-     * @throws InvalidArgumentException
+     * @psalm-param array{lower: mixed, upper: mixed} $value
+     *
+     * @return bool
      */
-    private function findByBetweenInclusive($columnValue): bool
+    private function findByBetweenInclusive(string $columnValue, array $value): bool
     {
-        $value = $this->getTupleValue();
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_BETWEEN_INCLUSIVE &&
                $columnValue >= $value['lower'] && $columnValue <= $value['upper'];
     }
 
-    public function findByTypeBool(bool $columnValue): bool
+    public function findByTypeBool(string $columnValue, string $value): bool
     {
         return (
-            $this->findByMatches($columnValue) ||
-            $this->findByMatchesLoose($columnValue) ||
-            $this->findByNotMatches($columnValue) ||
-            $this->findByNotMatchesLoose($columnValue)
+            $this->findByMatches($columnValue, $value) ||
+            $this->findByMatchesLoose($columnValue, $value) ||
+            $this->findByNotMatches($columnValue, $value) ||
+            $this->findByNotMatchesLoose($columnValue, $value)
+        );
+    }
+
+    public function findByTypeString(string $columnValue, string $value): bool
+    {
+        return (
+            $this->findByMatches($columnValue, $value) ||
+            $this->findByMatchesLoose($columnValue, $value) ||
+            $this->findByNotMatches($columnValue, $value) ||
+            $this->findByNotMatchesLoose($columnValue, $value) ||
+            $this->findByContains($columnValue, $value) ||
+            $this->findByContainsLoose($columnValue, $value) ||
+            $this->findByNotContains($columnValue, $value) ||
+            $this->findByNotContainsLoose($columnValue, $value) ||
+            $this->findByGreaterThan($columnValue, $value) ||
+            $this->findByGreaterOrEqualThan($columnValue, $value) ||
+            $this->findByLowerThan($columnValue, $value) ||
+            $this->findByLowerOrEqualThan($columnValue, $value)
         );
     }
 
     /**
-     * @param int|float $columnValue
+     * @psalm-param array{lower: mixed, upper: mixed} $value
      */
-    public function findByTypeNumber($columnValue): bool
+    public function findByTypeArray(string $columnValue, array $value): bool
     {
         return (
-            $this->findByMatches($columnValue) ||
-            $this->findByMatchesLoose($columnValue) ||
-            $this->findByNotMatches($columnValue) ||
-            $this->findByNotMatchesLoose($columnValue) ||
-            $this->findByContains((string) $columnValue) ||
-            $this->findByContainsLoose((string) $columnValue) ||
-            $this->findByNotContains((string) $columnValue) ||
-            $this->findByNotContainsLoose((string) $columnValue) ||
-            $this->findByGreaterThan($columnValue) ||
-            $this->findByGreaterOrEqualThan($columnValue) ||
-            $this->findByLowerThan($columnValue) ||
-            $this->findByLowerOrEqualThan($columnValue)
-        );
-    }
-
-    public function findByTypeString(string $columnValue): bool
-    {
-        return (
-            $this->findByMatches($columnValue) ||
-            $this->findByMatchesLoose($columnValue) ||
-            $this->findByNotMatches($columnValue) ||
-            $this->findByNotMatchesLoose($columnValue) ||
-            $this->findByContains($columnValue) ||
-            $this->findByContainsLoose($columnValue) ||
-            $this->findByNotContains($columnValue) ||
-            $this->findByNotContainsLoose($columnValue) ||
-            $this->findByGreaterThan($columnValue) ||
-            $this->findByGreaterOrEqualThan($columnValue) ||
-            $this->findByLowerThan($columnValue) ||
-            $this->findByLowerOrEqualThan($columnValue)
+            $this->findByBetween($columnValue, $value) ||
+            $this->findByBetweenInclusive($columnValue, $value)
         );
     }
 
     /**
-     * @throws InvalidArgumentException
-     */
-    public function findByTypeArray(string $columnValue): bool
-    {
-        return (
-            $this->findByBetween($columnValue) ||
-            $this->findByBetweenInclusive($columnValue)
-        );
-    }
-
-    /**
-     * @param mixed $value
+     * @param string $columnValue
      *
      * @throws InvalidArgumentException
      * @throws LogicException
      *
      * @return bool
      */
-    public function matchValue($value): bool
+    public function matchValue(string $columnValue): bool
     {
         $type = $this->getValueType();
 
         switch ($type) {
             case "bool":
-                if ($this->findByTypeBool((bool) $value)) {
+                $value = $this->getValueAsBool();
+                if ($this->findByTypeBool($columnValue, $value)) {
                     return true;
                 }
                 break;
             case "float":
-                if ($this->findByTypeNumber((float) $value)) {
-                    return true;
-                }
-                break;
             case "int":
-                if ($this->findByTypeNumber((int) $value)) {
-                    return true;
-                }
-                break;
             case "datetime":
             case "string":
-                if ($this->findByTypeString((string) $value)) {
+                $value = $this->getValueAsString();
+                if ($this->findByTypeString($columnValue, $value)) {
                     return true;
                 }
                 break;
             case "array":
-                if ($this->findByTypeArray((string) $value)) {
+                $value = $this->getValueAsTuple();
+                if ($this->findByTypeArray($columnValue, $value)) {
                     return true;
                 }
                 break;
