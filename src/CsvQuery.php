@@ -36,23 +36,27 @@ final class CsvQuery
     public const QUERY_TYPE_LOWER_OR_EQUAL_THAN   = 'lower_or_equal';
     public const QUERY_TYPE_BETWEEN               = 'between';
     public const QUERY_TYPE_BETWEEN_INCLUSIVE     = 'between_inclusive';
+    public const QUERY_TYPE_NOT_BETWEEN           = 'not_between';
+    public const QUERY_TYPE_NOT_BETWEEN_INCLUSIVE = 'not_between_inclusive';
+    public const QUERY_TYPE_EMPTY                 = 'empty';
+    public const QUERY_TYPE_NOT_EMPTY             = 'not_empty';
 
     private string $column;
 
     /** @psalm-var static::QUERY_TYPE_*  */
     private string $queryType;
 
-    /** @var mixed  */
+    /** @var bool|int|float|string|array|null  */
     private $value;
 
     /**
      * CsvQuery constructor.
      *
-     * @param string $column
-     * @param string $queryType
-     * @param mixed  $value
+     * @param string                           $column
+     * @param string                           $queryType
+     * @param bool|int|float|string|array|null $value
      *
-     * @psalm-param CsvQuery::QUERY_TYPE_* $queryType
+     * @psalm-param CsvQuery::QUERY_TYPE_*     $queryType
      *
      * @throws InvalidArgumentException
      */
@@ -87,7 +91,7 @@ final class CsvQuery
      */
     public function setQueryType(string $queryType): CsvQuery
     {
-        if (in_array($queryType, CsvQuery::allowedQueryTypes()) === false) {
+        if (in_array($queryType, CsvQuery::allowedQueryTypes(), true) === false) {
             throw new InvalidArgumentException(
                 sprintf(
                     'Can not use given query type (%s). Use one of: %s',
@@ -103,7 +107,7 @@ final class CsvQuery
     }
 
     /**
-     * @return mixed
+     * @return bool|int|float|string|array|null
      */
     public function getValue()
     {
@@ -111,29 +115,68 @@ final class CsvQuery
     }
 
     /**
-     * @param mixed $value
+     * @param bool|int|float|string|array|null $value
      *
      * @throws InvalidArgumentException
      */
     public function setValue($value): CsvQuery
     {
-        // With these types, the $value has to be an array tuple
+        // With these query types, the $value has to be an array tuple
         $arrayQueryTypes = [
             CsvQuery::QUERY_TYPE_BETWEEN,
-            CsvQuery::QUERY_TYPE_BETWEEN_INCLUSIVE
+            CsvQuery::QUERY_TYPE_BETWEEN_INCLUSIVE,
+            CsvQuery::QUERY_TYPE_NOT_BETWEEN,
+            CsvQuery::QUERY_TYPE_NOT_BETWEEN_INCLUSIVE,
         ];
 
-        if (
-            in_array($this->queryType, $arrayQueryTypes) === false ||
-            (is_array($value) && count($value) === 2)
-        ) {
+        if (is_array($value)) {
+            if (
+                in_array($this->queryType, $arrayQueryTypes, true) &&
+                count($value) === 2
+            ) {
+                $this->value = $value;
+
+                return $this;
+            }
+
+            throw new InvalidArgumentException(
+                sprintf(
+                    'When query type is "%s", "%s", "%s" or "%s", value must be an array tuple (array containing exactly 2 elements)',
+                    CsvQuery::QUERY_TYPE_BETWEEN,
+                    CsvQuery::QUERY_TYPE_BETWEEN_INCLUSIVE,
+                    CsvQuery::QUERY_TYPE_NOT_BETWEEN,
+                    CsvQuery::QUERY_TYPE_NOT_BETWEEN_INCLUSIVE
+                )
+            );
+        }
+
+        $types = [
+            "boolean",
+            "integer",
+            "double",
+            "string",
+            "NULL",
+        ];
+        if (in_array(gettype($value), $types, true)) {
             $this->value = $value;
 
             return $this;
         }
 
+        $acceptedTypes = [
+            "string",
+            "int",
+            "float",
+            "bool",
+            "array tuple",
+            "NULL",
+        ];
+
         throw new InvalidArgumentException(
-            'When query type is %s or %s, value must be an array with 2 elements'
+            sprintf(
+                'Value must be one of these types: %s',
+                join(", ", $acceptedTypes)
+            )
         );
     }
 
@@ -170,9 +213,11 @@ final class CsvQuery
         if (is_array($this->value) === false || count($this->value) !== 2) {
             throw new InvalidArgumentException(
                 sprintf(
-                    'When query type is "%s" or "%s", value must be an array with 2 elements',
+                    'When query type is "%s", "%s", "%s" or "%s", value must be an array with 2 elements',
                     CsvQuery::QUERY_TYPE_BETWEEN,
-                    CsvQuery::QUERY_TYPE_BETWEEN_INCLUSIVE
+                    CsvQuery::QUERY_TYPE_BETWEEN_INCLUSIVE,
+                    CsvQuery::QUERY_TYPE_NOT_BETWEEN,
+                    CsvQuery::QUERY_TYPE_NOT_BETWEEN_INCLUSIVE
                 )
             );
         }
@@ -200,6 +245,10 @@ final class CsvQuery
             CsvQuery::QUERY_TYPE_LOWER_OR_EQUAL_THAN,
             CsvQuery::QUERY_TYPE_BETWEEN,
             CsvQuery::QUERY_TYPE_BETWEEN_INCLUSIVE,
+            CsvQuery::QUERY_TYPE_NOT_BETWEEN,
+            CsvQuery::QUERY_TYPE_NOT_BETWEEN_INCLUSIVE,
+            CsvQuery::QUERY_TYPE_EMPTY,
+            CsvQuery::QUERY_TYPE_NOT_EMPTY,
         ];
     }
 
@@ -209,9 +258,18 @@ final class CsvQuery
     public function getValueType(): string
     {
         if ($this->value === null) {
-            throw new LogicException(
-                'Can not get type of value, no value has been set.'
-            );
+            $allowedQueriesWithNull = [
+                CsvQuery::QUERY_TYPE_EMPTY,
+                CsvQuery::QUERY_TYPE_NOT_EMPTY,
+            ];
+
+            if (in_array($this->getQueryType(), $allowedQueriesWithNull, true) === false) {
+                throw new LogicException(
+                    'Can not get type of value, no value has been set.'
+                );
+            }
+
+            return "null";
         }
 
         $booleanValues = [true, false, "true", "false",];
@@ -331,12 +389,7 @@ final class CsvQuery
     }
 
     /**
-     * @param string $columnValue
-     * @param array  $value
-     *
      * @psalm-param array{lower: mixed, upper: mixed} $value
-     *
-     * @return bool
      */
     private function findByBetween(string $columnValue, array $value): bool
     {
@@ -345,17 +398,42 @@ final class CsvQuery
     }
 
     /**
-     * @param string $columnValue
-     * @param array  $value
-     *
      * @psalm-param array{lower: mixed, upper: mixed} $value
-     *
-     * @return bool
      */
     private function findByBetweenInclusive(string $columnValue, array $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_BETWEEN_INCLUSIVE &&
                $columnValue >= $value['lower'] && $columnValue <= $value['upper'];
+    }
+
+    /**
+     * @psalm-param array{lower: mixed, upper: mixed} $value
+     */
+    private function findByNotBetween(string $columnValue, array $value): bool
+    {
+        return $this->getQueryType() === CsvQuery::QUERY_TYPE_NOT_BETWEEN &&
+               $columnValue <= $value['lower'] || $columnValue >= $value['upper'];
+    }
+
+    /**
+     * @psalm-param array{lower: mixed, upper: mixed} $value
+     */
+    private function findByNotBetweenInclusive(string $columnValue, array $value): bool
+    {
+        return $this->getQueryType() === CsvQuery::QUERY_TYPE_BETWEEN_INCLUSIVE &&
+               $columnValue < $value['lower'] || $columnValue > $value['upper'];
+    }
+
+    private function findByEmpty(string $columnValue): bool
+    {
+        return $this->getQueryType() === CsvQuery::QUERY_TYPE_EMPTY &&
+               $columnValue === "";
+    }
+
+    private function findByNotEmpty(string $columnValue): bool
+    {
+        return $this->getQueryType() === CsvQuery::QUERY_TYPE_NOT_EMPTY &&
+               $columnValue !== "";
     }
 
     public function findByTypeBool(string $columnValue, string $value): bool
@@ -393,7 +471,17 @@ final class CsvQuery
     {
         return (
             $this->findByBetween($columnValue, $value) ||
-            $this->findByBetweenInclusive($columnValue, $value)
+            $this->findByBetweenInclusive($columnValue, $value) ||
+            $this->findByNotBetween($columnValue, $value) ||
+            $this->findByNotBetweenInclusive($columnValue, $value)
+        );
+    }
+
+    public function findByTypeNull(string $columnValue): bool
+    {
+        return (
+            $this->findByEmpty($columnValue) ||
+            $this->findByNotEmpty($columnValue)
         );
     }
 
@@ -428,6 +516,11 @@ final class CsvQuery
             case "array":
                 $value = $this->getValueAsTuple();
                 if ($this->findByTypeArray($columnValue, $value)) {
+                    return true;
+                }
+                break;
+            case "null":
+                if ($this->findByTypeNull($columnValue)) {
                     return true;
                 }
                 break;

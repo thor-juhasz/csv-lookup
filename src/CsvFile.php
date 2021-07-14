@@ -66,11 +66,11 @@ class CsvFile
     /**
      * CsvFile constructor.
      *
-     * @param string    $file
-     * @param bool|null $hasHeaders
-     * @param string    $delimiter
-     * @param string    $enclosure
-     * @param string    $escape
+     * @param string      $file
+     * @param bool|null   $hasHeaders
+     * @param string|null $delimiter
+     * @param string      $enclosure
+     * @param string      $escape
      *
      * @throws InaccessibleException
      * @throws InvalidArgumentException
