@@ -70,18 +70,6 @@ final class CsvQuery
      */
     public function __construct(string $column, string $queryType, $value)
     {
-        $this->setColumn($column);
-        $this->setQueryType($queryType);
-        $this->setValue($value);
-    }
-
-    public function getColumn(): string
-    {
-        return $this->column;
-    }
-
-    public function setColumn(string $column): CsvQuery
-    {
         $this->column = $column;
 
         return $this;
@@ -236,6 +224,7 @@ final class CsvQuery
         ];
     }
 
+    /** @psalm-pure */
     public static function allowedQueryTypes(): array
     {
         return [
@@ -396,36 +385,28 @@ final class CsvQuery
                $columnValue <= $value;
     }
 
-    /**
-     * @psalm-param array{lower: mixed, upper: mixed} $value
-     */
+    /** @psalm-param array{lower: mixed, upper: mixed} $value */
     private function findByBetween(string $columnValue, array $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_BETWEEN &&
                $columnValue > $value['lower'] && $columnValue < $value['upper'];
     }
 
-    /**
-     * @psalm-param array{lower: mixed, upper: mixed} $value
-     */
+    /** @psalm-param array{lower: mixed, upper: mixed} $value */
     private function findByBetweenInclusive(string $columnValue, array $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_BETWEEN_INCLUSIVE &&
                $columnValue >= $value['lower'] && $columnValue <= $value['upper'];
     }
 
-    /**
-     * @psalm-param array{lower: mixed, upper: mixed} $value
-     */
+    /** @psalm-param array{lower: mixed, upper: mixed} $value */
     private function findByNotBetween(string $columnValue, array $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_NOT_BETWEEN &&
                $columnValue <= $value['lower'] || $columnValue >= $value['upper'];
     }
 
-    /**
-     * @psalm-param array{lower: mixed, upper: mixed} $value
-     */
+    /** @psalm-param array{lower: mixed, upper: mixed} $value */
     private function findByNotBetweenInclusive(string $columnValue, array $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_BETWEEN_INCLUSIVE &&
@@ -472,9 +453,7 @@ final class CsvQuery
         );
     }
 
-    /**
-     * @psalm-param array{lower: mixed, upper: mixed} $value
-     */
+    /** @psalm-param array{lower: mixed, upper: mixed} $value */
     public function findByTypeArray(string $columnValue, array $value): bool
     {
         return (
@@ -494,12 +473,8 @@ final class CsvQuery
     }
 
     /**
-     * @param string $columnValue
-     *
      * @throws InvalidArgumentException
      * @throws LogicException
-     *
-     * @return bool
      */
     public function matchValue(string $columnValue): bool
     {
