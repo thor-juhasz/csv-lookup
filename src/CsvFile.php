@@ -41,6 +41,10 @@ use const FILTER_VALIDATE_URL;
 
 class CsvFile
 {
+    protected const DEFAULT_ENCLOSURE = "\"";
+
+    protected const DEFAULT_ESCAPE = "\\";
+
     protected const AUTO_DETECT_DEPTH = 5;
 
     protected const AUTO_DETECT_DELIMITER_CHARACTERS = [
@@ -69,8 +73,8 @@ class CsvFile
      * @param string      $file
      * @param bool|null   $hasHeaders
      * @param string|null $delimiter
-     * @param string      $enclosure
-     * @param string      $escape
+     * @param string|null $enclosure
+     * @param string|null $escape
      *
      * @throws InaccessibleException
      * @throws InvalidArgumentException
@@ -81,8 +85,8 @@ class CsvFile
         string $file,
         ?bool $hasHeaders = null,
         ?string $delimiter = null,
-        string $enclosure = "\"",
-        string $escape = "\\"
+        ?string $enclosure = null,
+        ?string $escape = null
     ) {
         if (is_file($file) === false) {
             throw new InvalidArgumentException(sprintf('File "%s" not found.', $file));
@@ -94,8 +98,8 @@ class CsvFile
 
         $this->fileHandle = new SplFileObject($file, "r", false);
 
-        $this->enclosure = $enclosure;
-        $this->escape    = $escape;
+        $this->enclosure = $enclosure ?? CsvFile::DEFAULT_ENCLOSURE;
+        $this->escape    = $escape ?? CsvFile::DEFAULT_ESCAPE;
 
         if ($delimiter !== null) {
             if (strlen($delimiter) > 1) {
