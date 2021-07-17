@@ -23,12 +23,17 @@ use function is_string;
 use function join;
 use function preg_match;
 use function sprintf;
-use function strpos;
+use function str_contains;
 use function strtolower;
 use function strtotime;
 use function trim;
 
-final class CsvQuery
+/**
+ * Class CsvQuery
+ *
+ * @psalm-immutable
+ */
+class CsvQuery
 {
     public const QUERY_TYPE_MATCHES               = 'matches';
     public const QUERY_TYPE_MATCHES_LOOSE         = 'matches_loose';
@@ -49,44 +54,28 @@ final class CsvQuery
     public const QUERY_TYPE_EMPTY                 = 'empty';
     public const QUERY_TYPE_NOT_EMPTY             = 'not_empty';
 
-    private string $column;
+    private string|int|null $column;
 
     /** @psalm-var static::QUERY_TYPE_*  */
     private string $queryType;
 
-    /** @var bool|int|float|string|array|null  */
-    private $value;
+    private string|array|bool|int|float|null $value;
 
     /**
      * CsvQuery constructor.
      *
-     * @param string                           $column
+     * @param string|int|null                      $column
      * @param string                           $queryType
-     * @param bool|int|float|string|array|null $value
+     * @param string|array|bool|int|float|null $value
      *
      * @psalm-param CsvQuery::QUERY_TYPE_*     $queryType
      *
      * @throws InvalidArgumentException
      */
-    public function __construct(string $column, string $queryType, $value)
+    public function __construct(string|int|null $column, string $queryType, string|array|bool|int|float|null $value)
     {
         $this->column = $column;
 
-        return $this;
-    }
-
-    public function getQueryType(): string
-    {
-        return $this->queryType;
-    }
-
-    /**
-     * @psalm-param CsvQuery::QUERY_TYPE_* $queryType
-     *
-     * @throws InvalidArgumentException
-     */
-    public function setQueryType(string $queryType): CsvQuery
-    {
         if (in_array($queryType, CsvQuery::allowedQueryTypes(), true) === false) {
             throw new InvalidArgumentException(
                 sprintf(
@@ -99,24 +88,6 @@ final class CsvQuery
 
         $this->queryType = $queryType;
 
-        return $this;
-    }
-
-    /**
-     * @return bool|int|float|string|array|null
-     */
-    public function getValue()
-    {
-        return $this->value;
-    }
-
-    /**
-     * @param bool|int|float|string|array|null $value
-     *
-     * @throws InvalidArgumentException
-     */
-    public function setValue($value): CsvQuery
-    {
         // With these query types, the $value has to be an array tuple
         $arrayQueryTypes = [
             CsvQuery::QUERY_TYPE_BETWEEN,
@@ -127,23 +98,23 @@ final class CsvQuery
 
         if (is_array($value)) {
             if (
-                in_array($this->queryType, $arrayQueryTypes, true) &&
-                count($value) === 2
+                in_array($this->queryType, $arrayQueryTypes, true) === false ||
+                count($value) !== 2
             ) {
-                $this->value = $value;
-
-                return $this;
+                throw new InvalidArgumentException(
+                    sprintf(
+                        'When query type is "%s", "%s", "%s" or "%s", value must be an array tuple (array containing exactly 2 elements)',
+                        CsvQuery::QUERY_TYPE_BETWEEN,
+                        CsvQuery::QUERY_TYPE_BETWEEN_INCLUSIVE,
+                        CsvQuery::QUERY_TYPE_NOT_BETWEEN,
+                        CsvQuery::QUERY_TYPE_NOT_BETWEEN_INCLUSIVE
+                    )
+                );
             }
 
-            throw new InvalidArgumentException(
-                sprintf(
-                    'When query type is "%s", "%s", "%s" or "%s", value must be an array tuple (array containing exactly 2 elements)',
-                    CsvQuery::QUERY_TYPE_BETWEEN,
-                    CsvQuery::QUERY_TYPE_BETWEEN_INCLUSIVE,
-                    CsvQuery::QUERY_TYPE_NOT_BETWEEN,
-                    CsvQuery::QUERY_TYPE_NOT_BETWEEN_INCLUSIVE
-                )
-            );
+            $this->value = $value;
+
+            return;
         }
 
         $types = [
@@ -153,27 +124,40 @@ final class CsvQuery
             "string",
             "NULL",
         ];
-        if (in_array(gettype($value), $types, true)) {
-            $this->value = $value;
+        if (in_array(gettype($value), $types, true) === false) {
+            $acceptedTypes = [
+                "string",
+                "int",
+                "float",
+                "bool",
+                "array tuple",
+                "NULL",
+            ];
 
-            return $this;
+            throw new InvalidArgumentException(
+                sprintf(
+                    'Value must be one of these types: %s',
+                    join(", ", $acceptedTypes)
+                )
+            );
         }
 
-        $acceptedTypes = [
-            "string",
-            "int",
-            "float",
-            "bool",
-            "array tuple",
-            "NULL",
-        ];
+        $this->value = $value;
+    }
 
-        throw new InvalidArgumentException(
-            sprintf(
-                'Value must be one of these types: %s',
-                join(", ", $acceptedTypes)
-            )
-        );
+    public function getColumn(): string|int|null
+    {
+        return $this->column;
+    }
+
+    public function getQueryType(): string
+    {
+        return $this->queryType;
+    }
+
+    public function getValue(): string|array|bool|int|float|null
+    {
+        return $this->value;
     }
 
     private function getValueAsBool(): string
@@ -340,25 +324,25 @@ final class CsvQuery
     private function findByContains(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_CONTAINS &&
-               strpos($columnValue, $value) !== false;
+               str_contains($columnValue, $value);
     }
 
     private function findByContainsLoose(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_CONTAINS_LOOSE &&
-               strpos(strtolower($columnValue), strtolower($value)) !== false;
+               str_contains(strtolower($columnValue), strtolower($value));
     }
 
     private function findByNotContains(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_NOT_CONTAINS &&
-               strpos($columnValue, $value) === false;
+               str_contains($columnValue, $value) === false;
     }
 
     private function findByNotContainsLoose(string $columnValue, string $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_NOT_CONTAINS_LOOSE &&
-               strpos(strtolower($columnValue), strtolower($value)) === false;
+               str_contains(strtolower($columnValue), strtolower($value)) === false;
     }
 
     private function findByGreaterThan(string $columnValue, string $value): bool
