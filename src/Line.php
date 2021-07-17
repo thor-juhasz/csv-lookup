@@ -5,15 +5,18 @@ namespace CsvLookup;
 use CsvLookup\Exception\InvalidArgumentException;
 use CsvLookup\Exception\RuntimeException;
 use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use NumberFormatter;
 use function array_filter;
 
-class Line
+/**
+ * Class Line
+ *
+ * @psalm-template int
+ * @psalm-template string
+ * @extends ArrayCollection<int, string>
+ */
+class Line extends ArrayCollection
 {
-    /** @var Collection<int, string>  */
-    private Collection $line;
-
     /**
      * Line constructor.
      *
@@ -28,6 +31,7 @@ class Line
         private string $filename,
         array $line,
     ) {
+        /** @psalm-var array<int, string> $filtered */
         $filtered = array_filter($line, 'is_string');
 
         if ($filtered !== $line) {
@@ -36,9 +40,22 @@ class Line
             );
         }
 
-        /** @var Collection<int, string> $collection */
-        $collection = new ArrayCollection($line);
-        $this->line = $collection;
+        parent::__construct($filtered);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @psalm-param array<int, string> $elements
+     *
+     * @psalm-suppress LessSpecificImplementedReturnType
+     * {@link https://psalm.dev/docs/running_psalm/issues/LessSpecificImplementedReturnType/}
+     *
+     * @throws InvalidArgumentException
+     */
+    protected function createFrom(array $elements): Line
+    {
+        return new Line($this->getLineNumber(), $this->getFilename(), $elements);
     }
 
     public function getLineNumber(): int
@@ -52,19 +69,11 @@ class Line
     }
 
     /**
-     * @return Collection<int, string>
-     */
-    public function getLine(): Collection
-    {
-        return $this->line;
-    }
-
-    /**
      * @throws RuntimeException
      */
     public function getColumn(int $column): string
     {
-        $val = $this->line->get($column);
+        $val = $this->get($column);
 
         if ($val === null) {
             $ordinalNumberFormatter = new NumberFormatter('en_US', NumberFormatter::ORDINAL);
@@ -79,10 +88,5 @@ class Line
         }
 
         return $val;
-    }
-
-    public function countColumns(): int
-    {
-        return $this->line->count();
     }
 }
