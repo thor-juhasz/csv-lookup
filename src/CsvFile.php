@@ -14,11 +14,9 @@ use CsvLookup\Exception\InaccessibleException;
 use CsvLookup\Exception\InvalidArgumentException;
 use CsvLookup\Exception\LogicException;
 use CsvLookup\Exception\RuntimeException;
-use NumberFormatter;
 use SplFileObject;
 use function array_filter;
 use function array_key_exists;
-use function array_keys;
 use function array_search;
 use function count;
 use function filter_var;
@@ -29,12 +27,10 @@ use function max;
 use function sprintf;
 use function str_getcsv;
 use function strlen;
-use function strpos;
 use function strtotime;
 use const FILTER_VALIDATE_BOOLEAN;
 use const FILTER_VALIDATE_DOMAIN;
 use const FILTER_VALIDATE_EMAIL;
-use const FILTER_VALIDATE_INT;
 use const FILTER_VALIDATE_IP;
 use const FILTER_VALIDATE_MAC;
 use const FILTER_VALIDATE_URL;
@@ -380,163 +376,6 @@ class CsvFile
         }
 
         return $line;
-    }
-
-    /**
-     * Searches a CSV file for matches to the search string in the first
-     * argument. The return is an two-dimensional array as shown below:
-     *
-     * Given the following CSV file:
-     * ```csv
-     * name,stock,sold
-     * Volvo,22,22
-     * BMW,15,13
-     * Ford,17,22
-     * Land Rover,17,15
-     * ```
-     * If we search for "22" (with column as null), we might get results that
-     * look like the following:
-     * ```php
-     * $result = array(
-     *     2 => array(1, 2),
-     *     4 => array(2),
-     * )
-     * ```
-     * The keys of the first array are the line numbers with matches. The inner
-     * arrays contain the column indexes where matches were found.
-     *
-     * @param string      $searchString The phrase to search for
-     * @param string|null $column       If specified, search is performed only
-     *                                  on the specified column.
-     *                                  If the value validates as an integer,
-     *                                  it will search in the column with that
-     *                                  index. Otherwise, the column index of
-     *                                  the header that matches the string will
-     *                                  be used. Default null
-     * @param bool        $partial      If false, we check if the search string
-     *                                  is found within the columns.
-     *                                  If true, the column value must match the
-     *                                  search string exactly. Default true
-     * @param int|null    $offsetLine   If given, the search starts from the
-     *                                  given line number. Default null
-     *
-     * @throws LogicException
-     * @throws RuntimeException
-     *
-     * @return array<int, int[]>
-     */
-    public function find(
-        string $searchString,
-        ?string $column = null,
-        bool $partial = true,
-        ?int $offsetLine = null
-    ): array {
-        if ($this->fileHandle === null) {
-            throw new RuntimeException('Can not search in CSV file, no file given.');
-        }
-
-        $currentLine = $this->fileHandle->key();
-
-        if ($offsetLine !== null) {
-            try {
-                $this->fileHandle->seek($offsetLine);
-            } catch (\LogicException $e) {
-                $this->fileHandle->seek($currentLine);
-
-                $message = sprintf(
-                    'Can not set offset to "%d" in file "%s".',
-                    $offsetLine,
-                    $this->fileHandle->getFilename()
-                );
-
-                throw new LogicException($message, 0, $e);
-            }
-        }
-
-        /** @var array<int, int[]> $lineResults */
-        $lineResults = [];
-        while (($line = $this->getLine()) !== null) {
-            if (filter_var($column, FILTER_VALIDATE_INT) !== false) {
-                if ($this->columnSearch($searchString, $line, (int) $column, $partial)) {
-                    $lineResults[$this->fileHandle->key()][] = (int) $column;
-                }
-            } elseif ($column !== null) {
-                if ($this->headers === null) {
-                    throw new RuntimeException(
-                        sprintf(
-                            'Can not search in column "%s". No headers are defined in CSV file.',
-                            $column
-                        )
-                    );
-                }
-
-                /** @var int|false $columnIndex */
-                $columnIndex = array_search($column, $this->headers, true);
-                if ($columnIndex === false) {
-                    throw new RuntimeException(
-                        sprintf(
-                            'Can not search in column "%s". Column not found in CSV file headers.',
-                            $column
-                        )
-                    );
-                }
-
-                if ($this->columnSearch($searchString, $line, $columnIndex, $partial)) {
-                    $lineResults[$this->fileHandle->key()][] = (int) $column;
-                }
-            } else {
-                /** @var int $columnIndex */
-                foreach (array_keys($line) as $columnIndex) {
-                    if ($this->columnSearch($searchString, $line, $columnIndex, $partial)) {
-                        $lineResults[$this->fileHandle->key()][] = $columnIndex;
-                    }
-                }
-            }
-        }
-
-        $this->fileHandle->seek($currentLine);
-
-        return $lineResults;
-    }
-
-    /**
-     * @param string   $searchString
-     * @param string[] $line
-     * @param int      $column
-     * @param bool     $partial
-     *
-     * @throws RuntimeException
-     *
-     * @return bool
-     */
-    private function columnSearch(string $searchString, array $line, int $column, bool $partial = true): bool
-    {
-        if ($this->fileHandle === null) {
-            throw new RuntimeException('Can not search in CSV file, no file given.');
-        }
-
-        if (array_key_exists($column, $line) === false) {
-            $ordinalNumberFormatter = new NumberFormatter('en_US', NumberFormatter::ORDINAL);
-            throw new RuntimeException(
-                sprintf(
-                    'Can not search in the %s header as it does not exist on line %d',
-                    $ordinalNumberFormatter->format($column),
-                    $this->fileHandle->key()
-                )
-            );
-        }
-
-        $columnValue = $line[$column];
-
-        if ($partial && strpos($columnValue, $searchString) !== false) {
-            return true;
-        }
-
-        if ($partial === false && $columnValue === $searchString) {
-            return true;
-        }
-
-        return false;
     }
 
     /**
