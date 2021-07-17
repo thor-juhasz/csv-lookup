@@ -21,6 +21,7 @@ use function array_search;
 use function count;
 use function filter_var;
 use function is_file;
+use function is_int;
 use function is_numeric;
 use function is_readable;
 use function max;
@@ -58,8 +59,8 @@ class CsvFile
 
     private string $escape;
 
-    /** @var string[]|null */
-    private ?array $headers;
+    /** @var Line|null */
+    private ?Line $headers;
 
     private ?SplFileObject $fileHandle = null;
 
@@ -226,12 +227,13 @@ class CsvFile
      * delimiters very difficult. It is **strongly** recommended to always
      * specify if the file contains headers or not.
      *
+     * @throws InvalidArgumentException
      * @throws LogicException
      * @throws RuntimeException
      *
-     * @return string[]|null
+     * @return Line|null
      */
-    private function detectHeaders(): ?array
+    private function detectHeaders(): ?Line
     {
         if ($this->fileHandle === null) {
             throw new RuntimeException('Can not detect CSV headers, no file given.');
@@ -285,16 +287,16 @@ class CsvFile
     }
 
     /**
-     * @param array<string|null> $line
+     * @param Line $line
      *
      * @return array<string, bool>
      */
-    private function getLineValues(array $line): array
+    private function getLineValues(Line $line): array
     {
         /** @var array<string, bool> $values */
         $values = [
-            'onlyStrings'        => array_filter($line, fn($column) => is_numeric($column) === false) === $line,
-            'onlyNumeric'        => array_filter($line, 'is_numeric') === $line,
+            'onlyStrings'        => $line->filter(fn(string $column) => is_numeric($column) === false) === $line,
+            'onlyNumeric'        => $line->filter(fn(string $column) => is_numeric($column)) === $line,
             'containsBoolean'    => false,
             'containsDomain'     => false,
             'containsEmail'      => false,
@@ -305,10 +307,6 @@ class CsvFile
         ];
 
         foreach ($line as $column) {
-            if ($column === null) {
-                continue;
-            }
-
             $containsBoolean    = filter_var($column, FILTER_VALIDATE_BOOLEAN) !== false;
             $containsDomain     = filter_var($column, FILTER_VALIDATE_DOMAIN) !== false;
             $containsEmail      = filter_var($column, FILTER_VALIDATE_EMAIL) !== false;
@@ -330,11 +328,12 @@ class CsvFile
     }
 
     /**
+     * @throws InvalidArgumentException
      * @throws RuntimeException
      *
-     * @return string[]|null
+     * @return Line|null
      */
-    private function getLine(): ?array
+    private function getLine(): ?Line
     {
         if ($this->fileHandle === null) {
             throw new RuntimeException('Can not get line from CSV file, no file given.');
@@ -344,19 +343,20 @@ class CsvFile
         $line = $this->fileHandle->fgetcsv($this->delimiter, $this->enclosure, $this->escape);
 
         if ($line !== false && array_filter($line) !== []) {
-            return $line;
+            return new Line($this->fileHandle->key(), $this->fileHandle->getRealPath(), $line);
         }
 
         return null;
     }
 
     /**
+     * @throws InvalidArgumentException
      * @throws LogicException
      * @throws RuntimeException
      *
-     * @return string[]
+     * @return Line
      */
-    public function getHeaders(): array
+    public function getHeaders(): Line
     {
         if ($this->fileHandle === null) {
             throw new RuntimeException('Can not get CSV headers, no file given.');
@@ -384,19 +384,25 @@ class CsvFile
      * @throws InvalidArgumentException
      * @throws LogicException
      * @throws RuntimeException
+     *
+     * @return Result
      */
     public function findBy(
         array $conditions
-    ): array {
+    ): Result {
         if ($this->fileHandle === null) {
             throw new RuntimeException('Can not search in CSV file, no file given.');
         }
 
-        /** @var array<int, bool> $results */
-        $results = [];
+        $results = new Result($this->fileHandle->getRealPath());
+
+        if ($this->headers !== null) {
+            $results->setHeaders($this->headers);
+        }
+
         while (($line = $this->getLine()) !== null) {
             if ($this->findInLine($conditions, $line)) {
-                $results[$this->fileHandle->key()] = join(",", $line);
+                $results->addMatch($line);
             }
         }
 
@@ -405,7 +411,7 @@ class CsvFile
 
     /**
      * @param CsvQuery[] $conditions
-     * @param string[]   $line
+     * @param Line       $line
      *
      * @throws InvalidArgumentException
      * @throws LogicException
@@ -415,7 +421,7 @@ class CsvFile
      */
     private function findInLine(
         array $conditions,
-        array $line
+        Line $line
     ): bool {
         if ($this->fileHandle === null) {
             throw new RuntimeException(
@@ -423,32 +429,65 @@ class CsvFile
             );
         }
 
-        if ($this->headers === null) {
-            throw new RuntimeException(
-                'Can not query CSV file without headers.'
-            );
-        }
-
         foreach ($conditions as $condition) {
-            $column      = $condition->getColumn();
-            $columnIndex = array_search($column, $this->headers, true);
-            if ($columnIndex === false) {
-                throw new RuntimeException(
-                    sprintf('Can not query column "%s", does not exist in CVS headers.', $column)
-                );
-            }
+            $column = $condition->getColumn();
+            if ($column === null) {
+                foreach ($line->getKeys() as $column) {
+                    if ($this->findInColumn($column, $condition, $line)) {
+                        return true;
+                    }
+                }
 
-            if (array_key_exists($columnIndex, $line) === false) {
                 return false;
-            }
-
-            $columnValue = $line[$columnIndex];
-
-            if ($condition->matchValue($columnValue) === false) {
-                return false;
+            } else {
+                return $this->findInColumn($column, $condition, $line);
             }
         }
 
         return true;
+    }
+
+    /**
+     * @param string|int $column
+     * @param CsvQuery   $condition
+     * @param Line       $line
+     *
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws RuntimeException
+     *
+     * @return bool
+     */
+    private function findInColumn(string|int $column, CsvQuery $condition, Line $line): bool
+    {
+        if (is_int($column)) {
+            $columnValue = $line->getColumn($column);
+
+            return $condition->matchValue($columnValue);
+        }
+
+        if ($this->headers === null) {
+            throw new RuntimeException(
+                sprintf('Can not query column "%s", does not exist in CVS headers.', $column)
+            );
+        }
+
+        if ($this->headers->contains($column) === false) {
+            throw new RuntimeException(
+                sprintf('Can not query column "%s", does not exist in CVS headers.', $column)
+            );
+        }
+
+        $columnIndex = $this->headers->indexOf($column);
+
+        if ($columnIndex === false) {
+            throw new RuntimeException(
+                sprintf('Can not query column "%s", does not exist in CVS headers.', $column)
+            );
+        }
+
+        $columnValue = $line->getColumn($columnIndex);
+
+        return $condition->matchValue($columnValue);
     }
 }
