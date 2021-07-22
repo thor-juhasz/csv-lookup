@@ -420,7 +420,12 @@ class CsvFile
             throw new RuntimeException('Can not search in CSV file, no file given.');
         }
 
-        $results = new Result($this->fileHandle->getRealPath());
+        $results = new Result(
+            $this->fileHandle->getRealPath(),
+            $this->getDelimiter(),
+            $this->getEnclosureCharacter(),
+            $this->getEscapeCharacter()
+        );
 
         if ($this->headers !== null) {
             $results->setHeaders($this->headers);

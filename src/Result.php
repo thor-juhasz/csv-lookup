@@ -28,8 +28,26 @@ class Result
     public function __construct(
         /** @psalm-readonly */
         private string $filename,
+        private string $delimiter,
+        private string $enclosureCharacter,
+        private string $escapeCharacter,
     ) {
         $this->matches = new ArrayCollection();
+    }
+
+    public function getDelimiter(): string
+    {
+        return $this->delimiter;
+    }
+
+    public function getEnclosureCharacter(): string
+    {
+        return $this->enclosureCharacter;
+    }
+
+    public function getEscapeCharacter(): string
+    {
+        return $this->escapeCharacter;
     }
 
     public function getFilename(): string
