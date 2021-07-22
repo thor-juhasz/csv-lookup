@@ -55,9 +55,9 @@ class CsvFile
 
     private string $delimiter;
 
-    private string $enclosure;
+    private string $enclosureCharacter;
 
-    private string $escape;
+    private string $escapeCharacter;
 
     /** @var Line|null */
     private ?Line $headers;
@@ -95,8 +95,8 @@ class CsvFile
 
         $this->fileHandle = new SplFileObject($file, "r", false);
 
-        $this->enclosure = $enclosure ?? CsvFile::DEFAULT_ENCLOSURE;
-        $this->escape    = $escape ?? CsvFile::DEFAULT_ESCAPE;
+        $this->enclosureCharacter = $enclosure ?? CsvFile::DEFAULT_ENCLOSURE;
+        $this->escapeCharacter    = $escape ?? CsvFile::DEFAULT_ESCAPE;
 
         if ($delimiter !== null) {
             if (strlen($delimiter) > 1) {
@@ -162,7 +162,7 @@ class CsvFile
         $lineNum = 1;
         while (($line = $this->fileHandle->fgets()) !== false && $lineNum <= CsvFile::AUTO_DETECT_DEPTH) {
             foreach (CsvFile::AUTO_DETECT_DELIMITER_CHARACTERS as $delimChar) {
-                $columnsFound = count(str_getcsv($line, $delimChar, $this->enclosure, $this->escape));
+                $columnsFound = count(str_getcsv($line, $delimChar, $this->enclosureCharacter, $this->escapeCharacter));
                 if ($columnsFound > 1) {
                     if (isset($delimiters[$delimChar][$lineNum]) === false) {
                         $delimiters[$delimChar][$lineNum] = $columnsFound;
@@ -340,7 +340,7 @@ class CsvFile
         }
 
         /** @var string[]|false $line */
-        $line = $this->fileHandle->fgetcsv($this->delimiter, $this->enclosure, $this->escape);
+        $line = $this->fileHandle->fgetcsv($this->delimiter, $this->enclosureCharacter, $this->escapeCharacter);
 
         if ($line !== false && array_filter($line) !== []) {
             return new Line($this->fileHandle->key(), $this->fileHandle->getRealPath(), $line);
