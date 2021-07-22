@@ -38,7 +38,7 @@ class CsvQuery
     public const QUERY_TYPE_MATCHES               = 'matches';
     public const QUERY_TYPE_MATCHES_LOOSE         = 'matches_loose';
     public const QUERY_TYPE_NOT_MATCHES           = 'not_matches';
-    public const QUERY_TYPE_NOT_MATCHES_LOOSE     = 'not_matches';
+    public const QUERY_TYPE_NOT_MATCHES_LOOSE     = 'not_matches_loose';
     public const QUERY_TYPE_CONTAINS              = 'contains';
     public const QUERY_TYPE_CONTAINS_LOOSE        = 'contains_loose';
     public const QUERY_TYPE_NOT_CONTAINS          = 'not_contains';
