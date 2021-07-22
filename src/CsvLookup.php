@@ -14,6 +14,9 @@ use CsvLookup\Exception\InaccessibleException;
 use CsvLookup\Exception\InvalidArgumentException;
 use CsvLookup\Exception\LogicException;
 use CsvLookup\Exception\RuntimeException;
+use CsvLookup\Report\GenerateReport;
+use CsvLookup\Report\Text\TextReport;
+use CsvLookup\Report\Xml\XmlReport;
 use FilesystemIterator;
 use SplFileInfo;
 use SplFileObject;
@@ -135,6 +138,36 @@ class CsvLookup
         }
 
         return $this->results;
+    }
+
+    /**
+     * @psalm-param GenerateReport::REPORT_FORMAT_* $format
+     *
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     */
+    public function generateReport(
+        string $format,
+        string $output = ""
+    ): void {
+        switch ($format) {
+            case GenerateReport::REPORT_FORMAT_TEXT:
+                $generator = new TextReport($this->getPath(), $this->getConditions(), $this->getResults());
+                $generator($output);
+                break;
+            case GenerateReport::REPORT_FORMAT_XML:
+                $generator = new XmlReport($this->getPath(), $this->getConditions(), $this->getResults());
+                $generator($output);
+                break;
+            default:
+                throw new InvalidArgumentException(
+                    sprintf(
+                        'Can not generate report with format "%s", only the following are supported: %s',
+                        $format,
+                        join(", ", GenerateReport::supportedFormats())
+                    )
+                );
+        }
     }
 
     /**
