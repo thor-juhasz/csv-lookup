@@ -455,16 +455,25 @@ class CsvFile
             );
         }
 
+        if (count($conditions) === 0) {
+            throw new LogicException(
+                'No conditions set for search.'
+            );
+        }
+
         foreach ($conditions as $condition) {
             $column = $condition->getColumn();
             if ($column === null) {
+                $found = false;
                 foreach ($line->getKeys() as $column) {
                     if ($this->findInColumn($column, $condition, $line)) {
-                        return true;
+                        $found = true;
                     }
                 }
 
-                return false;
+                if ($found === false) {
+                    return false;
+                }
             } else {
                 return $this->findInColumn($column, $condition, $line);
             }
@@ -494,13 +503,13 @@ class CsvFile
 
         if ($this->headers === null) {
             throw new RuntimeException(
-                sprintf('Can not query column "%s", does not exist in CVS headers.', $column)
+                sprintf('Can not query column "%s", does not exist in CSV headers.', $column)
             );
         }
 
         if ($this->headers->contains($column) === false) {
             throw new RuntimeException(
-                sprintf('Can not query column "%s", does not exist in CVS headers.', $column)
+                sprintf('Can not query column "%s", does not exist in CSV headers.', $column)
             );
         }
 
@@ -508,7 +517,7 @@ class CsvFile
 
         if ($columnIndex === false) {
             throw new RuntimeException(
-                sprintf('Can not query column "%s", does not exist in CVS headers.', $column)
+                sprintf('Can not query column "%s", does not exist in CSV headers.', $column)
             );
         }
 
