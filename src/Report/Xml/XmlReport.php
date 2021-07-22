@@ -102,7 +102,20 @@ class XmlReport extends GenerateReport
             $results->appendChild($resultFile);
         }
 
-        $csvLookup = $xmlDocument->createElementNS('https://github.com/thor-juhasz/csv-lookup/blob/master/src/Report/Xml/Template/report-schema.xsd', 'csv-lookup');
+        $csvLookup = $xmlDocument->createElementNS(
+            'https://github.com/thor-juhasz/csv-lookup',
+            'csv-lookup'
+        );
+
+        $csvLookup->setAttribute(
+            'xmlns:xsi',
+            'http://www.w3.org/2001/XMLSchema-instance'
+        );
+
+        $csvLookup->setAttribute(
+            'xsi:schemaLocation',
+            'https://github.com/thor-juhasz/csv-lookup https://raw.githubusercontent.com/thor-juhasz/csv-lookup/resources/Resources/report-schema.xsd'
+        );
 
         $csvLookup->appendChild($search);
         $csvLookup->appendChild($results);
