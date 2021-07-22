@@ -29,16 +29,34 @@ class CsvLookup
     public const SKIP_REASON_NOT_READABLE = 'not_readable';
     public const SKIP_REASON_NOT_CSV      = 'not_csv_file';
 
-    /** @var Result[] */
-    private array $results;
+    /** @var CsvQuery[] */
+    private array $conditions = [];
 
-    /** @var array<int, array<string, string>> */
-    private array $skippedFiles;
+    private string $path;
 
-    public function __construct()
+    /** @var Result[] $results */
+    private array $results = [];
+
+    /** @var array<int, array<string, string>> $skippedFiles */
+    private array $skippedFiles = [];
+
+    private ?string $delimiter = null;
+
+    private string $enclosureCharacter = CsvFile::DEFAULT_ENCLOSURE;
+
+    private string $escapeCharacter = CsvFile::DEFAULT_ESCAPE;
+
+    /**
+     * @return CsvQuery[]
+     */
+    public function getConditions(): array
     {
-        $this->results = [];
-        $this->skippedFiles  = [];
+        return $this->conditions;
+    }
+
+    private function getPath(): string
+    {
+        return $this->path;
     }
 
     /**
@@ -54,13 +72,46 @@ class CsvLookup
         return $this->skippedFiles;
     }
 
+    public function getDelimiter(): ?string
+    {
+        return $this->delimiter;
+    }
+
+    public function setDelimiter(string $delimiter): CsvLookup
+    {
+        $this->delimiter = $delimiter;
+
+        return $this;
+    }
+
+    public function getEnclosureCharacter(): string
+    {
+        return $this->enclosureCharacter;
+    }
+
+    public function setEnclosureCharacter(string $enclosureCharacter): CsvLookup
+    {
+        $this->enclosureCharacter = $enclosureCharacter;
+
+        return $this;
+    }
+
+    public function getEscapeCharacter(): string
+    {
+        return $this->escapeCharacter;
+    }
+
+    public function setEscapeCharacter(string $escapeCharacter): CsvLookup
+    {
+        $this->escapeCharacter = $escapeCharacter;
+
+        return $this;
+    }
+
     /**
      * @param CsvQuery[]  $conditions
      * @param string      $path
      * @param bool|null   $hasHeaders
-     * @param string|null $delimiter
-     * @param string|null $enclosure
-     * @param string|null $escape
      *
      * @throws InaccessibleException
      * @throws InvalidArgumentException
@@ -73,16 +124,14 @@ class CsvLookup
         array $conditions,
         string $path,
         ?bool $hasHeaders = null,
-        ?string $delimiter = null,
-        ?string $enclosure = null,
-        ?string $escape = null
     ): array {
-        if (is_dir($path)) {
-            $this->dirSearch($conditions, $path, $hasHeaders, $delimiter, $enclosure, $escape);
-        }
+        $this->conditions = $conditions;
+        $this->path       = $path;
 
-        if (is_file($path)) {
-            $this->fileSearch($conditions, $path, $hasHeaders, $delimiter, $enclosure, $escape);
+        if (is_dir($path)) {
+            $this->dirSearch($conditions, $hasHeaders);
+        } elseif (is_file($path)) {
+            $this->fileSearch($conditions, $path, $hasHeaders);
         }
 
         return $this->results;
@@ -90,11 +139,7 @@ class CsvLookup
 
     /**
      * @param CsvQuery[]  $conditions
-     * @param string      $dir
      * @param bool|null   $hasHeaders
-     * @param string|null $delimiter
-     * @param string|null $enclosure
-     * @param string|null $escape
      *
      * @throws InaccessibleException
      * @throws InvalidArgumentException
@@ -103,13 +148,9 @@ class CsvLookup
      */
     private function dirSearch(
         array $conditions,
-        string $dir,
         ?bool $hasHeaders = null,
-        ?string $delimiter = null,
-        ?string $enclosure = null,
-        ?string $escape = null
     ): void {
-        $dirIterator = $this->getDirIterator($dir);
+        $dirIterator = $this->getDirIterator($this->getPath());
 
         /** @var SplFileInfo $file */
         foreach ($dirIterator as $file) {
@@ -140,7 +181,7 @@ class CsvLookup
                 continue;
             }
 
-            $this->fileSearch($conditions, $file->getRealPath(), $hasHeaders, $delimiter, $enclosure, $escape);
+            $this->fileSearch($conditions, $file->getRealPath(), $hasHeaders);
         }
     }
 
@@ -148,9 +189,6 @@ class CsvLookup
      * @param CsvQuery[]  $conditions
      * @param string      $filePath
      * @param bool|null   $hasHeaders
-     * @param string|null $delimiter
-     * @param string|null $enclosure
-     * @param string|null $escape
      *
      * @throws InaccessibleException
      * @throws InvalidArgumentException
@@ -161,14 +199,15 @@ class CsvLookup
         array $conditions,
         string $filePath,
         ?bool $hasHeaders = null,
-        ?string $delimiter = null,
-        ?string $enclosure = null,
-        ?string $escape = null
     ): void {
         $file = new SplFileObject($filePath);
 
         $csvFile = new CsvFile(
-            $file->getRealPath(), $hasHeaders, $delimiter, $enclosure, $escape
+            $file->getRealPath(),
+            $hasHeaders,
+            $this->getDelimiter(),
+            $this->getEnclosureCharacter(),
+            $this->getEscapeCharacter(),
         );
 
         $this->results[] = $csvFile->findBy($conditions);
