@@ -68,6 +68,7 @@ class Result
         $this->headers = $headers;
     }
 
+    /** @return Collection<int, Line> */
     public function getMatches(): Collection
     {
         return $this->matches;
