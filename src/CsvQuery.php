@@ -160,7 +160,7 @@ class CsvQuery
         return $this->value;
     }
 
-    private function getValueAsBool(): string
+    public function getValueAsBool(): string
     {
         if (in_array($this->getValue(), [true, "true"], true)) {
             return "true";
@@ -172,7 +172,7 @@ class CsvQuery
     /**
      * @throws LogicException
      */
-    private function getValueAsString(): string
+    public function getValueAsString(): string
     {
         if (is_array($this->value)) {
             throw new LogicException(
@@ -188,7 +188,7 @@ class CsvQuery
      *
      * @throws InvalidArgumentException
      */
-    private function getValueAsTuple(): array
+    public function getValueAsTuple(): array
     {
         if (is_array($this->value) === false || count($this->value) !== 2) {
             throw new InvalidArgumentException(
