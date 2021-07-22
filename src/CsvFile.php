@@ -128,6 +128,21 @@ class CsvFile
         }
     }
 
+    public function getDelimiter(): string
+    {
+        return $this->delimiter;
+    }
+
+    public function getEnclosureCharacter(): string
+    {
+        return $this->enclosureCharacter;
+    }
+
+    public function getEscapeCharacter(): string
+    {
+        return $this->escapeCharacter;
+    }
+
     /**
      * This method will attempt to detect the delimiter used in the CSV file.
      * To limit the complexity and execution time of the method, we will search
@@ -162,7 +177,14 @@ class CsvFile
         $lineNum = 1;
         while (($line = $this->fileHandle->fgets()) !== false && $lineNum <= CsvFile::AUTO_DETECT_DEPTH) {
             foreach (CsvFile::AUTO_DETECT_DELIMITER_CHARACTERS as $delimChar) {
-                $columnsFound = count(str_getcsv($line, $delimChar, $this->enclosureCharacter, $this->escapeCharacter));
+                $columnsFound = count(
+                    str_getcsv(
+                        $line,
+                        $delimChar,
+                        $this->getEnclosureCharacter(),
+                        $this->getEscapeCharacter()
+                    )
+                );
                 if ($columnsFound > 1) {
                     if (isset($delimiters[$delimChar][$lineNum]) === false) {
                         $delimiters[$delimChar][$lineNum] = $columnsFound;
@@ -340,7 +362,11 @@ class CsvFile
         }
 
         /** @var string[]|false $line */
-        $line = $this->fileHandle->fgetcsv($this->delimiter, $this->enclosureCharacter, $this->escapeCharacter);
+        $line = $this->fileHandle->fgetcsv(
+            $this->delimiter,
+            $this->getEnclosureCharacter(),
+            $this->getEscapeCharacter()
+        );
 
         if ($line !== false && array_filter($line) !== []) {
             return new Line($this->fileHandle->key(), $this->fileHandle->getRealPath(), $line);
