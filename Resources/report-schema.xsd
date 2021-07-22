@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning"
+           vc:minVersion="1.1"
+           elementFormDefault="qualified">
+    <xs:annotation>
+        <xs:appinfo>CSV Lookup Report</xs:appinfo>
+        <xs:documentation xml:lang="en">
+            This schema describes a report file detailing the results of a
+            search performed on CSV files, using the CSV lookup PHP library.
+            Available at: https://github.com/thor-juhasz/csv-lookup
+        </xs:documentation>
+    </xs:annotation>
+
+    <xs:simpleType name="StringOrInt">
+        <xs:union memberTypes="xs:string xs:integer" />
+    </xs:simpleType>
+
+    <xs:attributeGroup name="ArrayValueAttrs">
+        <xs:attribute name="value-lower" type="StringOrInt" />
+        <xs:attribute name="value-upper" type="StringOrInt" />
+    </xs:attributeGroup>
+
+    <xs:element name="csv-lookup">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="search" />
+                <xs:element ref="results" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="search">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="path" />
+                <xs:element ref="queries" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="path" type="xs:string" />
+    <xs:element name="queries">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="query" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="query">
+        <xs:complexType>
+            <xs:attribute name="column" use="required">
+                <xs:simpleType>
+                    <xs:union memberTypes="xs:string xs:integer" />
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="type" use="required" type="xs:NCName" />
+            <xs:attribute name="value" type="StringOrInt" />
+            <xs:attributeGroup ref="ArrayValueAttrs" />
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="results">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element maxOccurs="unbounded" ref="file" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="file">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="headers" />
+                <xs:element ref="found-lines" />
+            </xs:sequence>
+            <xs:attribute name="path" use="required" type="xs:string" />
+            <xs:attribute name="delimiter" use="required" type="xs:string" />
+            <xs:attribute name="enclosure" use="required" type="xs:string" />
+            <xs:attribute name="escape" use="required" type="xs:string" />
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="headers" type="xs:string" />
+    <xs:element name="found-lines">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element maxOccurs="unbounded" ref="line" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="line">
+        <xs:complexType mixed="true">
+            <xs:attribute name="number" use="required" type="xs:integer" />
+        </xs:complexType>
+    </xs:element>
+</xs:schema>
