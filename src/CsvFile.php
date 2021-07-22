@@ -38,9 +38,9 @@ use const FILTER_VALIDATE_URL;
 
 class CsvFile
 {
-    protected const DEFAULT_ENCLOSURE = "\"";
+    public const DEFAULT_ENCLOSURE = "\"";
 
-    protected const DEFAULT_ESCAPE = "\\";
+    public const DEFAULT_ESCAPE = "\\";
 
     protected const AUTO_DETECT_DEPTH = 5;
 
