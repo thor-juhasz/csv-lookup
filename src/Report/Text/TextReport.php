@@ -93,7 +93,7 @@ class TextReport extends GenerateReport
                     $padLength = strlen($text);
                     $text .= <<<EOT
                     Lower value: "%s"
-                    %sUpper value: "%s"
+                    %sUpper value: "%s"%s
                     EOT;
 
                     $text = sprintf(
@@ -101,6 +101,7 @@ class TextReport extends GenerateReport
                         (string) $value['lower'],
                         str_repeat(" ", $padLength),
                         (string) $value['upper'],
+                        PHP_EOL
                     );
                 } else {
                     $text .= sprintf('Value: "%s"%s', $value, PHP_EOL);
