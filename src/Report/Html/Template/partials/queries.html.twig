@@ -1,0 +1,44 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-hover caption-top">
+        <caption>Queries</caption>
+        <thead>
+            <tr>
+                <th data-bs-toggle="popover" data-bs-placement="bottom"
+                    data-bs-html="true" title="<strong>Column</strong>" data-bs-offset="70 0"
+                    data-bs-content="<p>This field tells you which column the query will be applied to for each of the CSV files.</p><p>If the value here shows &quot;<span class=&quot;fst-italic&quot;>(all)</span>&quot;, the query will search all of the columns from each CSV file.</p>"
+                    class="column popover-info">
+                    <span class="popover-info">Column</span>
+                </th>
+                <th data-bs-toggle="popover" data-bs-placement="bottom"
+                    data-bs-html="true" title="<strong>Query type</strong>" data-bs-offset="70 0"
+                    data-bs-content="<p>This tells you which query type each of the queries are, which affects how the search is performed.</p><p></p><p>For further explanation on the different query types, look at the <strong>Legend</strong> at the bottom of this page .</p>"
+                    class="query-type popover-info text-center">
+                    <span class="popover-info">Query type</span>
+                </th>
+                <th data-bs-toggle="popover" data-bs-placement="bottom"
+                    data-bs-html="true" title="<strong>Value</strong>" data-bs-offset="-70 0"
+                    data-bs-content="<p>The given value to apply the query condition on.</p><p>Examples:</p><p>If <span class=&quot;fst-italic&quot;>query type</span> is <strong>contains</strong>, then the column(s) will be checked to see if they have this value at all.</p><p>If <span class=&quot;fst-italic&quot;>query type</span> is <strong>matches</strong>, then the column(s) will be checked to see if their value is exactly the same.</p><p>If <span class=&quot;fst-italic&quot;>query type</span> is <strong>between</strong>, then we have two values here, that are either a <span class=&quot;fst-italic&quot;>number</span>, or a <span class=&quot;fst-italic&quot;>date/time stamp</span>. The column(s) will be checked if their value is between these two numbers/dates/times.</p>"
+                    class="value popover-info text-center">
+                    <span class="popover-info">Value</span>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for condition in conditions %}
+            <tr class="table-success font-monospace">
+                <td class="small"><div class="fst-italic">{% if condition.column is null %}<span class="fst-italic">(all)</span>{% else %}{{ condition.column }}{% endif %}</div></td>
+                <td class="small text-center">{{ condition.queryType }}</td>
+                <td class="small text-center">{% apply spaceless %}
+                    {% if condition.valueType is same as('bool') %}
+                        {{ condition.valueAsBool }}
+                    {% elseif condition.valueType in ['null', 'int', 'float', 'datetime', 'string'] %}
+                        {{ condition.valueAsString }}
+                    {% elseif condition.valueType is same as('array') %}
+                        {{ condition.valueAsTuple.lower }} &mdash; {{ condition.valueAsTuple.upper }}
+                    {% endif %}
+                {% endapply %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

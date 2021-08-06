@@ -1,0 +1,13 @@
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}
+            <li class="breadcrumb-item{% if breadcrumb.isActive %} active{% endif %}">{% apply spaceless %}
+                {% if breadcrumb.isActive %}
+                    {{ breadcrumb.getName }}
+                {% else %}
+                    <a href="{{ breadcrumb.getLink }}">{{ breadcrumb.getName }}</a>
+                {% endif %}
+            {% endapply %}</li>
+        {% endfor %}
+    </ol>
+</nav>
