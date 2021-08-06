@@ -126,6 +126,7 @@ class XmlReport extends GenerateReport
 
         $file = new SplFileObject($output, 'w+');
         $file->fwrite($contents, strlen($contents));
-        $file = null;
+
+        unset($file);
     }
 }

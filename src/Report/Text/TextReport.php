@@ -187,6 +187,6 @@ class TextReport extends GenerateReport
             $file->fpassthru();
         }
 
-        $file = null;
+        unset($file);
     }
 }
