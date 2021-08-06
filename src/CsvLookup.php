@@ -15,11 +15,15 @@ use CsvLookup\Exception\InvalidArgumentException;
 use CsvLookup\Exception\LogicException;
 use CsvLookup\Exception\RuntimeException;
 use CsvLookup\Report\GenerateReport;
+use CsvLookup\Report\Html\HtmlReport;
 use CsvLookup\Report\Text\TextReport;
 use CsvLookup\Report\Xml\XmlReport;
 use FilesystemIterator;
 use SplFileInfo;
 use SplFileObject;
+use Twig\Error\LoaderError;
+use Twig\Error\RuntimeError;
+use Twig\Error\SyntaxError;
 use UnexpectedValueException;
 use function is_dir;
 use function is_file;
@@ -144,7 +148,10 @@ class CsvLookup
      * @psalm-param GenerateReport::REPORT_FORMAT_* $format
      *
      * @throws InvalidArgumentException
+     * @throws LoaderError
      * @throws LogicException
+     * @throws RuntimeError
+     * @throws SyntaxError
      */
     public function generateReport(
         string $format,
@@ -157,6 +164,10 @@ class CsvLookup
                 break;
             case GenerateReport::REPORT_FORMAT_XML:
                 $generator = new XmlReport($this->getPath(), $this->getConditions(), $this->getResults());
+                $generator($output);
+                break;
+            case GenerateReport::REPORT_FORMAT_HTML:
+                $generator = new HtmlReport($this->getPath(), $this->getConditions(), $this->getResults());
                 $generator($output);
                 break;
             default:

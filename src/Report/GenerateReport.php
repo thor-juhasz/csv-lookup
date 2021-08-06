@@ -24,6 +24,7 @@ abstract class GenerateReport
 {
     public const REPORT_FORMAT_TEXT = 'text';
     public const REPORT_FORMAT_XML = 'xml';
+    public const REPORT_FORMAT_HTML = 'html';
 
     /**
      * @psalm-readonly
@@ -69,6 +70,7 @@ abstract class GenerateReport
         return [
             GenerateReport::REPORT_FORMAT_TEXT,
             GenerateReport::REPORT_FORMAT_XML,
+            GenerateReport::REPORT_FORMAT_HTML,
         ];
     }
 
