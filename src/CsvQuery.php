@@ -387,14 +387,14 @@ class CsvQuery
     private function findByNotBetween(string $columnValue, array $value): bool
     {
         return $this->getQueryType() === CsvQuery::QUERY_TYPE_NOT_BETWEEN &&
-               $columnValue <= $value['lower'] || $columnValue >= $value['upper'];
+               ($columnValue <= $value['lower'] || $columnValue >= $value['upper']);
     }
 
     /** @psalm-param array{lower: mixed, upper: mixed} $value */
     private function findByNotBetweenInclusive(string $columnValue, array $value): bool
     {
-        return $this->getQueryType() === CsvQuery::QUERY_TYPE_BETWEEN_INCLUSIVE &&
-               $columnValue < $value['lower'] || $columnValue > $value['upper'];
+        return $this->getQueryType() === CsvQuery::QUERY_TYPE_NOT_BETWEEN_INCLUSIVE &&
+               ($columnValue < $value['lower'] || $columnValue > $value['upper']);
     }
 
     private function findByEmpty(string $columnValue): bool
