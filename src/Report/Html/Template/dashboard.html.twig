@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="container-fluid">
+        {% include 'partials/queries.html.twig' %}
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover caption-top">
+                <caption>Files searched</caption>
+                <thead>
+                    <tr>
+                        <th class="file">File</th>
+                        <th class="columns text-end">Columns</th>
+                        <th class="matches text-center">Matched lines</th>
+                        <th class="lines text-end">Total lines</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for file in files %}
+                        <tr class="table-primary font-monospace">
+                            <td class="small"><a href="files/{{ file.filename }}.html">{{ file.filename }}</a></td>
+                            <td class="small text-end">{{ file.columns }}</td>
+                            <td class="small text-center fw-bold">{{ file.matches }}</td>
+                            <td class="small text-end">{{ file.totalLines }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td class="text-end fw-bold" colspan="3">Total matches</td>
+                        <td class="text-end fw-bold">{{ totalMatches }} / {{ totalLines }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+{% endblock %}

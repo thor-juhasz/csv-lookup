@@ -1,0 +1,76 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="container-fluid">
+        {% include 'partials/queries.html.twig' %}
+
+        <div class="row my-4">
+            <div class="col-12 col-sm-6 col-md-5 col-lg-4">
+                <h4>CSV file format</h4>
+
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="popover-info" data-bs-toggle="popover" data-bs-placement="bottom"
+                              data-bs-html="true" data-bs-content="This character is used to <span class=&quot;fst-italic&quot;>separate</span> columns in the CSV file.">
+                            Delimiter
+                        </span>
+                        <span class="badge bg-success rounded ms-2 font-monospace">{{ delimiter }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="popover-info" data-bs-toggle="popover" data-bs-placement="bottom"
+                              data-bs-html="true" data-bs-content="This character can be used to <span class=&quot;fst-italic&quot;>surround</span> the contents of a column in the CSV file, so that the column can contain the separation character without forcing a new column, or to contain line breaks without breaking the CSV file.">
+                            Enclosure character
+                        </span>
+                        <span class="badge bg-success rounded ms-2 font-monospace">{{ enclosureCharacter }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="popover-info" data-bs-toggle="popover" data-bs-placement="bottom"
+                              data-bs-html="true" data-bs-content="This character can be used <span class=&quot;fst-italic&quot;>in front of</span> characters that would otherwise break the CSV file, or force a new column when it is not desired.">
+                            Escape character
+                        </span>
+                        <span class="badge bg-success rounded ms-2 font-monospace">{{ escapeCharacter }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover caption-top">
+                <caption>Matches</caption>
+                <thead>
+                    <tr>
+                        <th>Line number</th>
+                        {% for header in headers %}
+                        <th class="text-center table-success">{{ header }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for line in matches %}
+                    <tr class="table-primary font-monospace">
+                        <td class="small">{{ line.getLineNumber }}</td>
+                        {% for value in line.getValues %}
+                            <td class="small text-center">{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% else %}
+                    <tr class="table-warning">
+                        <td class="small font-monospace fst-italic text-center" colspan="{{ headers|length + 1 }}">
+                            No matches
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if matches|length > 0 %}
+                <tfoot>
+                    <tr>
+                        <td class="text-end fw-bold" colspan="{{ headers|length }}">Total matches</td>
+                        <td class="text-end fw-bold">{{ totalMatches }} / {{ totalLines }}</td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+
+    </div>
+{% endblock %}

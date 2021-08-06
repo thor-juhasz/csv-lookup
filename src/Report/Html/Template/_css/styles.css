@@ -1,0 +1,44 @@
+body {
+    padding: 15px 5px;
+}
+
+.popover-info {
+    border-bottom: 1px dashed;
+    margin-bottom: -1px;
+}
+
+table thead tr th {
+    white-space: nowrap;
+}
+
+table thead tr th.column {
+    min-width: 85px;
+}
+
+table thead tr th.query-type {
+    min-width: 110px;
+}
+
+table thead tr th.value {
+    min-width: 365px;
+}
+
+table thead tr th.file {
+    min-width: 200px;
+}
+
+table thead tr th.columns {
+    min-width: 90px;
+}
+
+table thead tr th.matches {
+    min-width: 90px;
+}
+
+table thead tr th.lines {
+    min-width: 100px;
+}
+
+td.success {
+    background-color: #DFF0D8;
+}
