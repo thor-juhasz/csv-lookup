@@ -470,18 +470,18 @@ class CsvFile
         foreach ($conditions as $condition) {
             $column = $condition->getColumn();
             if ($column === null) {
-                $found = false;
+                $conditionMatch = false;
                 foreach ($line->getKeys() as $column) {
                     if ($this->findInColumn($column, $condition, $line)) {
-                        $found = true;
+                        $conditionMatch = true;
                     }
                 }
-
-                if ($found === false) {
-                    return false;
-                }
             } else {
-                return $this->findInColumn($column, $condition, $line);
+                $conditionMatch = $this->findInColumn($column, $condition, $line);
+            }
+
+            if ($conditionMatch === false) {
+                return false;
             }
         }
 
