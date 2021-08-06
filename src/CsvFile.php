@@ -424,18 +424,19 @@ class CsvFile
             $this->fileHandle->getRealPath(),
             $this->getDelimiter(),
             $this->getEnclosureCharacter(),
-            $this->getEscapeCharacter()
+            $this->getEscapeCharacter(),
+            $this->headers,
         );
 
-        if ($this->headers !== null) {
-            $results->setHeaders($this->headers);
-        }
-
+        $totalLines = 0;
         while (($line = $this->getLine()) !== null) {
+            $totalLines++;
             if ($this->findInLine($conditions, $line)) {
                 $results->addMatch($line);
             }
         }
+
+        $results->setTotalLines($totalLines);
 
         return $results;
     }

@@ -17,8 +17,7 @@ use function sprintf;
 
 class Result
 {
-    /** @var Line|null */
-    private ?Line $headers = null;
+    private int $totalLines = 0;
 
     /**
      * @var Collection<int, Line>
@@ -31,6 +30,7 @@ class Result
         private string $delimiter,
         private string $enclosureCharacter,
         private string $escapeCharacter,
+        private ?Line $headers = null,
     ) {
         $this->matches = new ArrayCollection();
     }
@@ -105,4 +105,16 @@ class Result
             $this->matches->removeElement($line);
         }
     }
+
+    public function getTotalLines(): int
+    {
+        return $this->totalLines;
+    }
+
+    public function setTotalLines(int $totalLines): void
+    {
+        $this->totalLines = $totalLines;
+    }
+
+
 }
